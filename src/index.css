@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #8b5cf6;
+  --color-brand-secondary: #10b981;
+  --color-brand-accent: #f59e0b;
+  --color-brand-danger: #ef4444;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-50 font-sans antialiased selection:bg-brand-primary/30;
+  }
+}
+
+.glass-card {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl;
+}
+
+.neon-glow {
+  @apply shadow-[0_0_15px_rgba(139,92,246,0.3)];
+}

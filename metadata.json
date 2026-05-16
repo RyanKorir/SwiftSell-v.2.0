@@ -1,0 +1,8 @@
+{
+  "name": "SwiftSell",
+  "description": "SwiftSell High Order Hub: A high-speed, cloud-synced order and inventory management system with multi-user support and Google Identity verification, built for small businesses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
