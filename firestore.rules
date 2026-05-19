@@ -30,14 +30,28 @@ service cloud.firestore {
     // --- Validation Blueprints ---
 
     function isValidUser(data) {
+<<<<<<< HEAD
+      return data.uid == request.auth.uid &&
+=======
       return data.keys().hasAll(['uid', 'pin']) &&
              data.uid == request.auth.uid &&
+>>>>>>> 1aa9bfc46505429d68510ca35baadd2f6545327e
              data.pin is string && data.pin.matches('^[0-9]{4}$') &&
              (data.get('xp', 0) is number) &&
              (data.get('level', 1) is number);
     }
 
     function isValidProduct(data, userId) {
+<<<<<<< HEAD
+      return data.ownerId == userId &&
+             data.name is string && data.name.size() <= 100 &&
+             data.cost is number && data.cost >= 0 &&
+             data.price is number && data.price >= 0;
+    }
+
+    function isValidCustomer(data, userId) {
+      return data.ownerId == userId &&
+=======
       return data.keys().hasAll(['name', 'cost', 'price', 'stock', 'ownerId']) &&
              data.ownerId == userId &&
              data.name is string && data.name.size() <= 100 &&
@@ -49,10 +63,20 @@ service cloud.firestore {
     function isValidCustomer(data, userId) {
       return data.keys().hasAll(['name', 'ownerId']) &&
              data.ownerId == userId &&
+>>>>>>> 1aa9bfc46505429d68510ca35baadd2f6545327e
              data.name is string && data.name.size() <= 100;
     }
 
     function isValidOrder(data, userId) {
+<<<<<<< HEAD
+      return data.ownerId == userId &&
+             data.status in ['pending', 'processing', 'delivered', 'cancelled'] &&
+             data.totalAmount is number;
+    }
+
+    function isValidOrderItem(data, userId, orderId) {
+      return data.ownerId == userId &&
+=======
       return data.keys().hasAll(['status', 'totalAmount', 'profit', 'ownerId']) &&
              data.ownerId == userId &&
              data.status in ['pending', 'processing', 'delivered', 'cancelled'] &&
@@ -63,14 +87,19 @@ service cloud.firestore {
     function isValidOrderItem(data, userId, orderId) {
       return data.keys().hasAll(['orderId', 'productId', 'quantity', 'priceAtPurchase', 'costAtPurchase', 'ownerId']) &&
              data.ownerId == userId &&
+>>>>>>> 1aa9bfc46505429d68510ca35baadd2f6545327e
              data.orderId == orderId &&
              data.productId is string &&
              data.quantity is number && data.quantity > 0;
     }
 
     function isValidExpense(data, userId) {
+<<<<<<< HEAD
+      return data.ownerId == userId &&
+=======
       return data.keys().hasAll(['category', 'amount', 'ownerId']) &&
              data.ownerId == userId &&
+>>>>>>> 1aa9bfc46505429d68510ca35baadd2f6545327e
              data.category is string &&
              data.amount is number && data.amount >= 0;
     }
@@ -80,12 +109,20 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow create: if isOwner(userId) && isValidUser(incoming());
+<<<<<<< HEAD
+      allow update: if isOwner(userId) && (
+        // Validation checks
+        isValidUser(incoming()) && 
+        (incoming().diff(existing()).affectedKeys().hasOnly(['pin']) ||
+         incoming().diff(existing()).affectedKeys().hasAny(['xp', 'level', 'currentStreak', 'lastActiveDate', 'badges', 'email', 'displayName']))
+=======
       allow update: if isOwner(userId) && isValidUser(incoming()) && (
         // Action: Change PIN
         (incoming().diff(existing()).affectedKeys().hasOnly(['pin'])) ||
         // Action: Update Stats
         (incoming().diff(existing()).affectedKeys().hasAny(['xp', 'level', 'currentStreak', 'lastActiveDate', 'badges']) &&
          incoming().xp >= existing().xp)
+>>>>>>> 1aa9bfc46505429d68510ca35baadd2f6545327e
       );
 
       // Sub-collections
