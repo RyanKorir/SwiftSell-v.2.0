@@ -40,7 +40,7 @@ export default function App() {
 }
 
 function AppShell() {
-  const { user, userStats, loading, signIn, logOut } = useAuth();
+  const { user, userStats, loading, signIn, logOut, authError } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'inventory' | 'customers' | 'finances' | 'settings' | 'tutorials'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
@@ -114,6 +114,12 @@ function AppShell() {
               <LogIn size={22} />
               <span>Connect with Identity Profile</span>
             </button>
+
+            {authError && (
+              <p className="text-sm text-red-400 text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                {authError}
+              </p>
+            )}
 
             <div className="flex items-center space-x-4">
               <div className="h-px flex-1 bg-white/5" />
