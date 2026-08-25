@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { firestoreApi } from '../lib/firestore.ts';
+import { dataApi as firestoreApi } from '../lib/database.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { 
   Plus, 

@@ -1,12 +1,21 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { auth, googleProvider, db } from '../lib/firebase.ts';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import type { User } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase.ts';
+
+interface UserStats {
+  uid: string;
+  pin: string;
+  xp: number;
+  level: number;
+  currentStreak: number;
+  lastActiveDate: string;
+  badges: any[];
+}
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  userStats: any | null;
+  userStats: UserStats | null;
   authError: string | null;
   signIn: () => Promise<void>;
   logOut: () => Promise<void>;
@@ -15,81 +24,111 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function mapUserRow(row: any): UserStats {
+  return {
+    uid: row.id,
+    pin: row.pin,
+    xp: row.xp,
+    level: row.level,
+    currentStreak: row.current_streak,
+    lastActiveDate: row.last_active_date,
+    badges: row.badges ?? []
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userStats, setUserStats] = useState<any | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const fetchUserStats = async (uid: string) => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid));
-      if (userDoc.exists()) {
-        setUserStats(userDoc.data());
-      } else {
-        // Initialize user stats if they don't exist
-        const initialStats = {
-          uid: uid,
-          pin: '0000',
-          xp: 0,
-          level: 1,
-          currentStreak: 0,
-          lastActiveDate: new Date().toISOString(),
-          badges: []
-        };
-        await setDoc(doc(db, 'users', uid), initialStats);
-        setUserStats(initialStats);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setUserStats(mapUserRow(data));
+        return;
       }
+
+      // Initialize user row if it doesn't exist yet
+      const { data: created, error: insertError } = await supabase
+        .from('users')
+        .insert({ id: uid })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      setUserStats(mapUserRow(created));
     } catch (err: any) {
       setAuthError(
-        err?.code === 'permission-denied'
-          ? 'Signed in, but your account data was blocked by Firestore security rules. Check the deployed firestore.rules.'
+        err?.code === '42501' || err?.message?.includes('policy')
+          ? 'Signed in, but your account data was blocked by Row Level Security. Check the policies on the users table.'
           : err?.message || 'Failed to load account data.'
       );
-      console.error('Firestore user-stats error:', err);
+      console.error('Supabase user-stats error:', err);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchUserStats(currentUser.uid);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserStats(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchUserStats(session.user.id);
       } else {
         setUserStats(null);
       }
-      setLoading(false);
     });
-    return unsubscribe;
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   const signIn = async () => {
     setAuthError(null);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) throw error;
     } catch (err: any) {
-      const code = err?.code as string | undefined;
-      if (code === 'auth/unauthorized-domain') {
+      const message = err?.message || '';
+      if (message.toLowerCase().includes('provider is not enabled')) {
         setAuthError(
-          "This domain isn't authorized for sign-in yet. Add it under Firebase Console → Authentication → Settings → Authorized domains."
+          'Google sign-in is not enabled yet. Enable it under Supabase Dashboard → Authentication → Providers → Google.'
         );
-      } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        setAuthError('Sign-in was closed before completing. Try again.');
-      } else if (code === 'auth/popup-blocked') {
-        setAuthError('Your browser blocked the sign-in popup. Allow popups for this site and try again.');
+      } else if (message.toLowerCase().includes('redirect')) {
+        setAuthError(
+          "This URL isn't in the allowed redirect list yet. Add it under Supabase Dashboard → Authentication → URL Configuration."
+        );
       } else {
-        setAuthError(err?.message || 'Sign-in failed. Please try again.');
+        setAuthError(message || 'Sign-in failed. Please try again.');
       }
       console.error('Sign-in error:', err);
     }
   };
 
   const logOut = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
   };
 
   const refreshStats = async () => {
-    if (user) await fetchUserStats(user.uid);
+    if (user) await fetchUserStats(user.id);
   };
 
   return (

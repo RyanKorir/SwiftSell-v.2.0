@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { firestoreApi } from '../lib/firestore.ts';
+import { dataApi as firestoreApi } from '../lib/database.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { 
   TrendingUp, 
