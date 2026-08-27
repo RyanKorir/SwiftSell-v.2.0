@@ -14,11 +14,13 @@ import {
   Leaf,
   LogOut,
   ShieldCheck,
-  LogIn
+  LogIn,
+  Palette
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from './context/AuthContext.tsx';
+import ThemeSwitcher from './components/ThemeSwitcher.tsx';
 
 // Pages
 import Dashboard from './pages/Dashboard.tsx';
@@ -43,6 +45,7 @@ function AppShell() {
   const { user, userStats, loading, signIn, logOut, authError } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'inventory' | 'customers' | 'finances' | 'settings' | 'tutorials'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const [pin, setPin] = useState('');
   const [errorStatus, setErrorStatus] = useState(false);
@@ -91,25 +94,25 @@ function AppShell() {
         <motion.div 
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          className="glass-card p-0 w-full max-w-md overflow-hidden shadow-[0_0_80px_rgba(139,92,246,0.1)]"
+          className="glass-card hud-panel p-0 w-full max-w-md overflow-hidden shadow-[0_0_80px_color-mix(in_srgb,var(--color-brand-primary)_15%,transparent)]"
         >
           <div className="bg-brand-primary/5 p-12 text-center border-b border-white/5">
             <div className="w-20 h-20 bg-brand-primary rounded-3xl flex items-center justify-center mx-auto mb-6 neon-glow shadow-2xl shadow-brand-primary/30">
               <Leaf size={40} className="text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-white tracking-tighter">SwiftSell</h1>
+            <h1 className="font-display text-4xl font-bold text-white tracking-tighter">SwiftSell</h1>
             <p className="text-slate-400 text-lg mt-2 font-medium">High Order Hub</p>
           </div>
 
           <div className="p-8 space-y-8">
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-center">Identity Verification</h2>
+              <h2 className="font-display text-xl font-bold text-center">Identity Verification</h2>
               <p className="text-slate-400 text-sm text-center">Please sign in with your corporate or business account to access your workspace.</p>
             </div>
 
             <button 
               onClick={signIn}
-              className="w-full py-4 bg-white text-slate-950 rounded-2xl font-bold text-lg hover:bg-slate-200 transition-all active:scale-95 shadow-xl flex items-center justify-center space-x-3"
+              className="btn-glow w-full py-4 bg-white text-slate-950 rounded-2xl font-bold text-lg hover:bg-slate-200 active:scale-95 shadow-xl flex items-center justify-center space-x-3"
             >
               <LogIn size={22} />
               <span>Connect with Identity Profile</span>
@@ -147,13 +150,13 @@ function AppShell() {
         <motion.div 
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          className={`glass-card p-0 w-full max-w-md overflow-hidden transition-all duration-500 ${errorStatus ? 'border-brand-danger shadow-brand-danger/30 shake' : 'shadow-[0_0_80px_rgba(139,92,246,0.1)]'}`}
+          className={`glass-card hud-panel p-0 w-full max-w-md overflow-hidden transition-all duration-500 ${errorStatus ? 'border-brand-danger shadow-brand-danger/30 shake' : 'shadow-[0_0_80px_color-mix(in_srgb,var(--color-brand-primary)_15%,transparent)]'}`}
         >
           <div className="bg-brand-primary/5 p-8 text-center border-b border-white/5">
             <div className="w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center mx-auto mb-4 neon-glow">
               <Leaf size={32} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">SwiftSell Portal</h1>
+            <h1 className="font-display text-2xl font-bold text-white tracking-tight">SwiftSell Portal</h1>
             <p className="text-slate-400 text-sm mt-1">High Order Hub</p>
           </div>
 
@@ -196,10 +199,10 @@ function AppShell() {
                         else if (num === 'Delete') setPin(prev => prev.slice(0, -1));
                         else if (pin.length < 4) setPin(prev => prev + num);
                       }}
-                      className={`h-14 rounded-xl flex items-center justify-center transition-all active:scale-95 text-xl font-bold
+                      className={`h-14 rounded-xl flex items-center justify-center transition-all active:scale-95 text-xl font-bold font-mono
                         ${typeof num === 'string' 
-                          ? 'bg-transparent text-slate-500 text-xs uppercase tracking-widest hover:text-white' 
-                          : 'bg-white/5 border border-white/5 hover:bg-white/10 text-slate-200'}
+                          ? 'bg-transparent text-slate-500 text-xs uppercase tracking-widest hover:text-white font-sans' 
+                          : 'bg-white/5 border border-white/5 hover:bg-white/10 text-slate-200 hover-lift'}
                       `}
                     >
                       {num}
@@ -222,7 +225,7 @@ function AppShell() {
                   }
                 }}
                 disabled={pin.length < 4}
-                className={`w-full py-4 rounded-xl font-bold text-lg transition-all active:scale-95 shadow-xl flex items-center justify-center space-x-2
+                className={`btn-glow w-full py-4 rounded-xl font-bold text-lg active:scale-95 shadow-xl flex items-center justify-center space-x-2
                   ${pin.length === 4 
                     ? 'bg-brand-primary text-white shadow-brand-primary/20 hover:bg-brand-primary/90' 
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'}
@@ -256,7 +259,7 @@ function AppShell() {
           <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center neon-glow">
             <Leaf className="text-white w-6 h-6" />
           </div>
-          <span className="text-xl font-bold tracking-tight">SwiftSell</span>
+          <span className="font-display text-xl font-bold tracking-tight">SwiftSell</span>
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -268,8 +271,8 @@ function AppShell() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   activeTab === tab.id 
-                    ? 'bg-brand-primary/10 text-brand-primary font-semibold' 
-                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    ? 'bg-brand-primary/10 text-brand-primary font-semibold border border-brand-primary/20' 
+                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 hover:translate-x-0.5'
                 }`}
               >
                 <Icon size={20} />
@@ -279,14 +282,15 @@ function AppShell() {
           })}
         </nav>
 
-        <div className="glass-card p-4 space-y-3">
+        <div className="glass-card hud-panel p-4 space-y-3">
           <div className="flex justify-between items-center text-xs text-slate-400">
-            <span>Level {userStats?.level || 1}</span>
-            <span>{userStats?.xp || 0} XP</span>
+            <span className="font-display font-semibold tracking-wide">LEVEL {userStats?.level || 1}</span>
+            <span className="font-mono">{userStats?.xp || 0} XP</span>
           </div>
           <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
             <motion.div 
               className="h-full bg-brand-primary"
+              style={{ boxShadow: '0 0 12px color-mix(in srgb, var(--color-brand-primary) 70%, transparent)' }}
               initial={{ width: 0 }}
               animate={{ width: `${Math.min((userStats?.xp % 100) || 0, 100)}%` }}
             />
@@ -314,13 +318,46 @@ function AppShell() {
              <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">
                <Menu size={24} />
              </button>
-             <span className="ml-2 font-bold text-lg">SwiftSell</span>
+             <span className="ml-2 font-display font-bold text-lg">SwiftSell</span>
           </div>
           <div className="hidden lg:block text-slate-400 font-medium">
             Welcome back, <span className="text-slate-100 italic">{user.displayName?.split(' ')[0] || 'Seller'}</span>
           </div>
           
           <div className="flex items-center space-x-4">
+             <div className="relative">
+               <button
+                 type="button"
+                 onClick={() => setIsThemePickerOpen((v) => !v)}
+                 aria-expanded={isThemePickerOpen}
+                 aria-label="Change color scheme"
+                 className="p-2 text-slate-400 hover:text-slate-200 transition-colors btn-glow rounded-lg"
+               >
+                 <Palette size={20} />
+               </button>
+               <AnimatePresence>
+                 {isThemePickerOpen && (
+                   <>
+                     <div
+                       className="fixed inset-0 z-30"
+                       onClick={() => setIsThemePickerOpen(false)}
+                     />
+                     <motion.div
+                       initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                       animate={{ opacity: 1, y: 0, scale: 1 }}
+                       exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                       transition={{ duration: 0.15 }}
+                       className="absolute right-0 top-full mt-2 z-40 glass-card p-4 w-56"
+                     >
+                       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
+                         Color Scheme
+                       </p>
+                       <ThemeSwitcher />
+                     </motion.div>
+                   </>
+                 )}
+               </AnimatePresence>
+             </div>
              <button 
                onClick={() => {
                  setIsLocked(true);
@@ -357,7 +394,7 @@ function AppShell() {
                {activeTab === 'customers' && <Customers />}
                {activeTab === 'finances' && <Finances />}
                {activeTab === 'settings' && <SettingsPage />}
-               {activeTab === 'tutorials' && <Tutorials />}
+               {activeTab === 'tutorials' && <Tutorials setActiveTab={setActiveTab} />}
              </motion.div>
            </AnimatePresence>
         </main>
@@ -399,7 +436,7 @@ function AppShell() {
               className="fixed inset-y-0 left-0 w-64 bg-slate-900 z-50 p-6 lg:hidden flex flex-col"
             >
               <div className="flex justify-between items-center mb-8">
-                <span className="font-bold text-xl">SwiftSell</span>
+                <span className="font-display font-bold text-xl">SwiftSell</span>
                 <button onClick={() => setIsSidebarOpen(false)}>
                   <X />
                 </button>

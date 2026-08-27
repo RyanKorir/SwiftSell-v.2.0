@@ -17,6 +17,7 @@ const tutorials = [
     title: 'Getting Started',
     icon: PlayCircle,
     color: 'text-brand-primary',
+    targetTab: 'dashboard' as const,
     content: [
       'Welcome to SwiftSell! Your all-in-one local business manager.',
       'Access your dashboard to see current revenue and pending tasks.',
@@ -30,6 +31,7 @@ const tutorials = [
     title: 'Managing Orders',
     icon: ShoppingBag,
     color: 'text-brand-accent',
+    targetTab: 'orders' as const,
     content: [
       'Click "New Order" on the Dashboard or Orders page.',
       'Select a product and quantity. Customer info is optional.',
@@ -42,6 +44,7 @@ const tutorials = [
     title: 'Inventory Control',
     icon: Package,
     color: 'text-brand-secondary',
+    targetTab: 'inventory' as const,
     content: [
       'Add products with cost and retail price to track profit.',
       'Stock levels automatically decrease when orders are placed.',
@@ -54,6 +57,7 @@ const tutorials = [
     title: 'Financial Health',
     icon: BarChart,
     color: 'text-brand-danger',
+    targetTab: 'finances' as const,
     content: [
       'Revenue and Profit are calculated from "Delivered" orders.',
       'Log expenses (Rent, Marketing, Supplies) to see your Net Balance.',
@@ -65,6 +69,7 @@ const tutorials = [
     title: 'Earning XP & Rewards',
     icon: ShieldCheck,
     color: 'text-white',
+    targetTab: 'dashboard' as const,
     content: [
       'Completing business tasks earns you Experience Points (XP).',
       'Adding Products: 10 XP',
@@ -75,7 +80,9 @@ const tutorials = [
   }
 ];
 
-export default function Tutorials() {
+type TabId = 'dashboard' | 'orders' | 'inventory' | 'customers' | 'finances' | 'settings' | 'tutorials';
+
+export default function Tutorials({ setActiveTab }: { setActiveTab: (tab: TabId) => void }) {
   const [selected, setSelected] = useState(tutorials[0].id);
 
   const activeTutorial = tutorials.find(t => t.id === selected)!;
@@ -139,7 +146,13 @@ export default function Tutorials() {
 
                 <div className="mt-8 p-4 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-between">
                    <span className="text-sm font-medium">Ready to try it out?</span>
-                   <button className="text-brand-primary font-bold text-sm hover:underline">Go to Page</button>
+                   <button
+                     type="button"
+                     onClick={() => setActiveTab(activeTutorial.targetTab)}
+                     className="text-brand-primary font-bold text-sm hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary rounded"
+                   >
+                     Go to Page
+                   </button>
                 </div>
              </motion.div>
            </AnimatePresence>

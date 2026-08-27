@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
+import { useAuth } from '../context/AuthContext.tsx';
+import { googleSheetsService, SheetsAuthExpiredError } from '../services/googleSheetsService.ts';
 import { 
   Plus, 
   TrendingUp, 
@@ -10,7 +12,11 @@ import {
   DollarSign,
   Edit2,
   Trash2,
-  Table
+  Table,
+  FileSpreadsheet,
+  ExternalLink,
+  RefreshCcw,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
@@ -19,6 +25,10 @@ import { format } from 'date-fns';
 export default function Finances() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [lastExportUrl, setLastExportUrl] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const { providerToken } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: orders } = useQuery({ 
@@ -38,6 +48,44 @@ export default function Finances() {
   const net = profit - expenseTotal;
 
   const finances = { revenue, profit, expenses: expenseTotal, net };
+
+  const handleExport = async () => {
+    if (!providerToken) {
+      setExportError('Sign out and sign back in with Google to enable Sheets export (this grants the extra permission needed).');
+      return;
+    }
+
+    setIsExporting(true);
+    setExportError(null);
+    setLastExportUrl(null);
+
+    try {
+      const headers = ['Date', 'Category', 'Description', 'Amount (Ksh)'];
+      const rows = (expenses as any[])?.map((e) => [
+        e.date ? format(new Date(e.date), 'yyyy-MM-dd') : 'Today',
+        e.category,
+        e.description ?? '',
+        e.amount
+      ]) || [];
+
+      const result = await googleSheetsService.exportToSheets(
+        providerToken,
+        `Business Finances - ${format(new Date(), 'MMM dd, yyyy')}`,
+        headers,
+        rows
+      );
+
+      setLastExportUrl(googleSheetsService.getSpreadsheetUrl(result.spreadsheetId));
+    } catch (err) {
+      if (err instanceof SheetsAuthExpiredError) {
+        setExportError('Your Google session for Sheets access has expired. Sign out and sign back in to refresh it.');
+      } else {
+        setExportError(err instanceof Error ? err.message : 'Export failed. Please check your connection and try again.');
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const createExpenseMutation = useMutation({
     mutationFn: (newExpense: any) => firestoreApi.addExpense(newExpense),
@@ -84,20 +132,60 @@ export default function Finances() {
     <div className="space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Finances</h1>
+          <h1 className="font-display text-3xl font-bold">Finances</h1>
           <p className="text-slate-400">Analysis of your business health.</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingExpense(null);
-            setIsFormOpen(true);
-          }}
-          className="bg-brand-danger hover:bg-brand-danger/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-danger/20 transition-all active:scale-95"
-        >
-          <Plus size={20} />
-          <span>Log Expense</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="btn-glow bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 active:scale-95 disabled:opacity-50"
+            title="Export expenses to a new Google Sheet"
+          >
+            {isExporting ? <RefreshCcw className="animate-spin" size={18} /> : <FileSpreadsheet size={18} />}
+            <span>{isExporting ? 'Exporting…' : 'Export to Sheets'}</span>
+          </button>
+          <button 
+            onClick={() => {
+              setEditingExpense(null);
+              setIsFormOpen(true);
+            }}
+            className="btn-glow bg-brand-danger hover:bg-brand-danger/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-danger/20 active:scale-95"
+          >
+            <Plus size={20} />
+            <span>Log Expense</span>
+          </button>
+        </div>
       </div>
+
+      {exportError && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4 flex items-start gap-3 text-sm text-brand-danger border-brand-danger/20"
+        >
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <span>{exportError}</span>
+        </motion.div>
+      )}
+
+      {lastExportUrl && (
+        <motion.a
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          href={lastExportUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="glass-card p-4 flex items-center justify-between text-sm hover-lift"
+        >
+          <span className="flex items-center gap-2 text-brand-secondary font-semibold">
+            <FileSpreadsheet size={18} /> Spreadsheet created successfully
+          </span>
+          <span className="flex items-center gap-1 text-slate-400">
+            Open in Google Sheets <ExternalLink size={14} />
+          </span>
+        </motion.a>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {summary.map((item, i) => (

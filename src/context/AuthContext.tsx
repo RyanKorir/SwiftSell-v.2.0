@@ -17,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   userStats: UserStats | null;
   authError: string | null;
+  providerToken: string | null;
   signIn: () => Promise<void>;
   logOut: () => Promise<void>;
   refreshStats: () => Promise<void>;
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [providerToken, setProviderToken] = useState<string | null>(null);
 
   const fetchUserStats = async (uid: string) => {
     try {
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      setProviderToken(session?.provider_token ?? null);
       if (session?.user) {
         fetchUserStats(session.user.id).finally(() => setLoading(false));
       } else {
@@ -88,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
+      setProviderToken(session?.provider_token ?? null);
       if (session?.user) {
         await fetchUserStats(session.user.id);
       } else {
@@ -103,7 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin }
+        options: {
+          redirectTo: window.location.origin,
+          scopes: 'https://www.googleapis.com/auth/spreadsheets',
+          queryParams: { access_type: 'offline', prompt: 'consent' }
+        }
       });
       if (error) throw error;
     } catch (err: any) {
@@ -132,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, userStats, authError, signIn, logOut, refreshStats }}>
+    <AuthContext.Provider value={{ user, loading, userStats, authError, providerToken, signIn, logOut, refreshStats }}>
       {children}
     </AuthContext.Provider>
   );

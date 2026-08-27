@@ -1,9 +1,62 @@
 @import "tailwindcss";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/rajdhani/latin-600.css";
+@import "@fontsource/rajdhani/latin-700.css";
+@import "@fontsource/jetbrains-mono/latin-400.css";
+@import "@fontsource/jetbrains-mono/latin-500.css";
+@import "@fontsource/jetbrains-mono/latin-700.css";
 
 @theme {
   --color-brand-primary: #8b5cf6;
   --color-brand-secondary: #10b981;
   --color-brand-accent: #f59e0b;
+  --color-brand-danger: #ef4444;
+  --font-display: "Rajdhani", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* --- Color schemes ---
+   Each preset overrides the same set of CSS variables that the @theme
+   block above declares. Tailwind v4 utilities (bg-brand-primary, etc.)
+   resolve through var(--color-brand-primary) at paint time, so switching
+   the [data-theme] attribute on <html> re-themes the whole app instantly
+   with zero JS re-render of styles. */
+
+[data-theme="violet"] {
+  --color-brand-primary: #8b5cf6;
+  --color-brand-secondary: #10b981;
+  --color-brand-accent: #f59e0b;
+  --color-brand-danger: #ef4444;
+}
+
+[data-theme="cyan"] {
+  --color-brand-primary: #22d3ee;
+  --color-brand-secondary: #d946ef;
+  --color-brand-accent: #fbbf24;
+  --color-brand-danger: #fb7185;
+}
+
+[data-theme="lime"] {
+  --color-brand-primary: #a3e635;
+  --color-brand-secondary: #8b5cf6;
+  --color-brand-accent: #fbbf24;
+  --color-brand-danger: #f87171;
+}
+
+[data-theme="crimson"] {
+  --color-brand-primary: #f43f5e;
+  --color-brand-secondary: #94a3b8;
+  --color-brand-accent: #fb923c;
+  --color-brand-danger: #dc2626;
+}
+
+[data-theme="gold"] {
+  --color-brand-primary: #eab308;
+  --color-brand-secondary: #2dd4bf;
+  --color-brand-accent: #a78bfa;
   --color-brand-danger: #ef4444;
 }
 
@@ -11,12 +64,97 @@
   body {
     @apply bg-slate-950 text-slate-50 font-sans antialiased selection:bg-brand-primary/30;
   }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
+/* --- Glass + HUD system --- */
+
 .glass-card {
-  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl;
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
 .neon-glow {
-  @apply shadow-[0_0_15px_rgba(139,92,246,0.3)];
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+}
+
+/* Signature element: a thin scanning glow along the top edge of key
+   HUD panels — the one bold, consistent motion motif tying "glass" and
+   "gamer HUD" together. Applied sparingly (login/lock cards, XP panel). */
+.hud-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -40%;
+  width: 40%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-brand-primary) 90%, white),
+    transparent
+  );
+  animation: hud-scan 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes hud-scan {
+  0% { left: -40%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-panel::before {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
+
+/* Interactive feel: consistent hover-lift + glow across buttons/cards */
+.btn-glow {
+  @apply transition-all duration-200;
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 24px color-mix(in srgb, var(--color-brand-primary) 35%, transparent);
+  transform: translateY(-1px);
+}
+
+.btn-glow:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.hover-lift {
+  @apply transition-all duration-200;
+}
+
+.hover-lift:hover {
+  @apply -translate-y-0.5 border-white/20;
+}
+
+/* Focus rings always resolve to the active theme color */
+:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
 }

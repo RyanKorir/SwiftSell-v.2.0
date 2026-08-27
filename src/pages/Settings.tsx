@@ -2,13 +2,15 @@ import { useState, FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+import ThemeSwitcher from '../components/ThemeSwitcher.tsx';
 import { 
   Lock, 
   ShieldCheck, 
   Save, 
   RefreshCcw,
   AlertCircle,
-  Cloud
+  Cloud,
+  Palette
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -53,7 +55,7 @@ export default function Settings() {
   return (
     <div className="space-y-8 max-w-2xl pb-20">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="font-display text-3xl font-bold">Settings</h1>
         <p className="text-slate-400 mt-1">Configure your app and security preferences.</p>
       </div>
 
@@ -128,6 +130,17 @@ export default function Settings() {
 
       <div className="glass-card p-6">
         <div className="flex items-center space-x-3 mb-4">
+          <div className="p-2 rounded-lg bg-brand-primary/10 text-brand-primary">
+            <Palette size={20} />
+          </div>
+          <h2 className="text-xl font-bold">Appearance</h2>
+        </div>
+        <p className="text-sm text-slate-400 mb-5">Pick a color scheme. Changes apply instantly across the whole app.</p>
+        <ThemeSwitcher />
+      </div>
+
+      <div className="glass-card p-6">
+        <div className="flex items-center space-x-3 mb-4">
           <div className="p-2 rounded-lg bg-brand-accent/10 text-brand-accent">
             <Cloud size={20} />
           </div>
@@ -140,11 +153,11 @@ export default function Settings() {
           </div>
           <div className="flex justify-between py-2 border-b border-white/5">
             <span>Database</span>
-            <span className="text-white font-medium">Firebase Firestore (Cloud-sync)</span>
+            <span className="text-white font-medium">Supabase (Postgres + Row Level Security)</span>
           </div>
           <div className="flex justify-between py-2 border-b border-white/5">
             <span>Region</span>
-            <span className="text-white font-medium">europe-west2</span>
+            <span className="text-white font-medium">eu-west-2</span>
           </div>
           <div className="flex justify-between py-2">
             <span>Currency</span>
