@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -17,7 +17,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 
-export default function Orders() {
+export default function Orders({ fabTrigger }: { fabTrigger?: number } = {}) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [search, setSearch] = useState('');
@@ -144,6 +144,14 @@ export default function Orders() {
     setEditingOrder(order);
     setIsFormOpen(true);
   };
+
+  useEffect(() => {
+    if (fabTrigger) {
+      setEditingOrder(null);
+      setIsFormOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fabTrigger]);
 
   const filteredOrders = (orders as any[])?.filter(o => 
     o.id.toString().includes(search) || 
@@ -303,11 +311,13 @@ export default function Orders() {
                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
             />
             <motion.div 
-               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-               animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-               className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg p-6 glass-card z-[101]"
+               initial={{ opacity: 0, y: 120 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: 120 }}
+               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+               className="fixed inset-x-0 bottom-0 sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-lg max-h-[88vh] sm:max-h-none overflow-y-auto p-6 glass-card rounded-b-none rounded-t-2xl sm:rounded-2xl z-[101]"
             >
+               <div className="sm:hidden mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/20" />
                <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
                  <Package className="text-brand-primary" />
                  <span>{editingOrder ? 'Edit Order Details' : 'New Order'}</span>

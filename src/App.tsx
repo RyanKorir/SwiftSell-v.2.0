@@ -15,12 +15,14 @@ import {
   LogOut,
   ShieldCheck,
   LogIn,
-  Palette
+  Palette,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { useAuth } from './context/AuthContext.tsx';
 import ThemeSwitcher from './components/ThemeSwitcher.tsx';
+import { dataApi as firestoreApi } from './lib/database.ts';
 
 // Pages
 import Dashboard from './pages/Dashboard.tsx';
@@ -46,6 +48,16 @@ function AppShell() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'inventory' | 'customers' | 'finances' | 'settings' | 'tutorials'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
+  const [quickAddSignal, setQuickAddSignal] = useState(0);
+
+  const { data: navProducts } = useQuery({
+    queryKey: ['products'],
+    queryFn: firestoreApi.getProducts,
+    enabled: !!user
+  });
+  const lowStockCount = ((navProducts as any[]) || []).filter(
+    (p) => p.stock <= (p.lowStockThreshold || 5)
+  ).length;
   const [isLocked, setIsLocked] = useState(true);
   const [pin, setPin] = useState('');
   const [errorStatus, setErrorStatus] = useState(false);
@@ -282,8 +294,18 @@ function AppShell() {
                     : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 hover:translate-x-0.5'
                 }`}
               >
-                <Icon size={20} />
-                <span>{tab.label}</span>
+                <span className="relative">
+                  <Icon size={20} />
+                  {tab.id === 'inventory' && lowStockCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand-danger ring-2 ring-slate-900" />
+                  )}
+                </span>
+                <span className="flex-1 text-left">{tab.label}</span>
+                {tab.id === 'inventory' && lowStockCount > 0 && (
+                  <span className="text-[10px] font-bold bg-brand-danger/20 text-brand-danger px-1.5 py-0.5 rounded-full">
+                    {lowStockCount}
+                  </span>
+                )}
               </button>
              );
           })}
@@ -396,7 +418,7 @@ function AppShell() {
                className="h-full"
              >
                {activeTab === 'dashboard' && <Dashboard setActiveTab={setActiveTab} />}
-               {activeTab === 'orders' && <Orders />}
+               {activeTab === 'orders' && <Orders fabTrigger={quickAddSignal} />}
                {activeTab === 'inventory' && <Inventory />}
                {activeTab === 'customers' && <Customers />}
                {activeTab === 'finances' && <Finances />}
@@ -406,22 +428,72 @@ function AppShell() {
            </AnimatePresence>
         </main>
 
-        <nav className="lg:hidden h-16 bg-slate-900 border-t border-white/5 flex items-center justify-around px-2 pb-safe">
-           {tabs.slice(0, 6).map((tab) => {
+        <nav className="lg:hidden h-16 bg-slate-900 border-t border-white/5 flex items-center justify-around px-2 pb-safe relative">
+           {[
+             tabs.find((t) => t.id === 'dashboard')!,
+             tabs.find((t) => t.id === 'orders')!
+           ].map((tab) => {
              const Icon = getIcon(tab.id);
+             const active = activeTab === tab.id;
              return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-                  activeTab === tab.id ? 'text-brand-primary' : 'text-slate-500'
-                }`}
+                className="flex flex-col items-center justify-center flex-1 py-1 gap-0.5"
               >
-                <Icon size={20} />
-                <span className="text-[10px] mt-1">{tab.label}</span>
+                <span className={`flex items-center justify-center w-11 h-7 rounded-full transition-colors ${active ? 'bg-brand-primary/15 text-brand-primary' : 'text-slate-500'}`}>
+                  <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                </span>
+                <span className={`text-[10px] ${active ? 'text-brand-primary font-semibold' : 'text-slate-500'}`}>{tab.label}</span>
               </button>
              );
            })}
+
+           {/* Center FAB — the one action that stands out, matching WhatsApp's new-chat / IG's create button */}
+           <div className="flex-1 flex justify-center">
+             <button
+               onClick={() => {
+                 setActiveTab('orders');
+                 setQuickAddSignal((s) => s + 1);
+               }}
+               aria-label="New Order"
+               className="btn-glow -mt-7 w-14 h-14 rounded-full bg-brand-primary text-white flex items-center justify-center shadow-lg shadow-brand-primary/40 border-4 border-slate-950 active:scale-90"
+             >
+               <Plus size={26} strokeWidth={2.5} />
+             </button>
+           </div>
+
+           {[tabs.find((t) => t.id === 'inventory')!].map((tab) => {
+             const Icon = getIcon(tab.id);
+             const active = activeTab === tab.id;
+             return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className="flex flex-col items-center justify-center flex-1 py-1 gap-0.5"
+              >
+                <span className={`relative flex items-center justify-center w-11 h-7 rounded-full transition-colors ${active ? 'bg-brand-primary/15 text-brand-primary' : 'text-slate-500'}`}>
+                  <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                  {lowStockCount > 0 && (
+                    <span className="absolute -top-0.5 right-1.5 w-2 h-2 rounded-full bg-brand-danger ring-2 ring-slate-900" />
+                  )}
+                </span>
+                <span className={`text-[10px] ${active ? 'text-brand-primary font-semibold' : 'text-slate-500'}`}>{tab.label}</span>
+              </button>
+             );
+           })}
+
+           <button
+             onClick={() => setIsSidebarOpen(true)}
+             className="flex flex-col items-center justify-center flex-1 py-1 gap-0.5"
+           >
+             <span className={`flex items-center justify-center w-11 h-7 rounded-full transition-colors ${
+               ['customers', 'finances', 'tutorials', 'settings'].includes(activeTab) ? 'bg-brand-primary/15 text-brand-primary' : 'text-slate-500'
+             }`}>
+               <Menu size={20} />
+             </span>
+             <span className={`text-[10px] ${['customers', 'finances', 'tutorials', 'settings'].includes(activeTab) ? 'text-brand-primary font-semibold' : 'text-slate-500'}`}>More</span>
+           </button>
         </nav>
       </div>
 
@@ -449,7 +521,7 @@ function AppShell() {
                 </button>
               </div>
               <div className="space-y-1 flex-1 overflow-y-auto">
-                {tabs.map((tab) => {
+                {tabs.filter((t) => !['dashboard', 'orders', 'inventory'].includes(t.id)).map((tab) => {
                   const Icon = getIcon(tab.id);
                   return (
                     <button
