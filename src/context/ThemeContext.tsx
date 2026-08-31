@@ -11,7 +11,12 @@ export const THEMES: ThemeOption[] = [
   { id: 'cyan', label: 'Cyber Cyan', swatch: '#22d3ee' },
   { id: 'lime', label: 'Toxic Lime', swatch: '#a3e635' },
   { id: 'crimson', label: 'Crimson Ops', swatch: '#f43f5e' },
-  { id: 'gold', label: 'Gold Rush', swatch: '#eab308' }
+  { id: 'gold', label: 'Gold Rush', swatch: '#eab308' },
+  { id: 'glass', label: 'Glass', swatch: '#7dd3fc' },
+  { id: 'elegant', label: 'Elegant', swatch: '#d4a574' },
+  { id: 'sunset', label: 'Sunset', swatch: '#fb923c' },
+  { id: 'ocean', label: 'Ocean', swatch: '#2dd4bf' },
+  { id: 'royal', label: 'Royal', swatch: '#818cf8' }
 ];
 
 const STORAGE_KEY = 'swiftsell-theme';

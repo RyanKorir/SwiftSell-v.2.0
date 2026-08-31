@@ -4,12 +4,19 @@ import { THEMES, useTheme } from '../context/ThemeContext.tsx';
 
 export default function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
   const { themeId, setThemeId } = useTheme();
+  const size = compact ? 26 : 40;
 
   return (
-    <div className={compact ? 'flex gap-2' : 'grid grid-cols-5 gap-3'}>
+    <div
+      className={
+        compact
+          ? 'flex gap-2 overflow-x-auto max-w-[220px] py-1 px-0.5'
+          : 'grid grid-cols-5 gap-x-3 gap-y-4'
+      }
+    >
       {THEMES.map((theme) => {
         const active = theme.id === themeId;
-        return (
+        const button = (
           <button
             key={theme.id}
             type="button"
@@ -17,27 +24,33 @@ export default function ThemeSwitcher({ compact = false }: { compact?: boolean }
             title={theme.label}
             aria-label={`Use ${theme.label} color scheme`}
             aria-pressed={active}
-            className={`relative flex items-center justify-center rounded-full transition-all btn-glow ${
-              compact ? 'w-7 h-7' : 'w-10 h-10 mx-auto'
-            } ${active ? 'ring-2 ring-offset-2 ring-offset-slate-950' : 'hover:scale-110'}`}
-            style={{
-              backgroundColor: theme.swatch,
-              '--tw-ring-color': theme.swatch
-            } as React.CSSProperties}
+            className={`relative flex shrink-0 items-center justify-center rounded-full transition-all btn-glow ${
+              active ? 'ring-2 ring-offset-2 ring-offset-slate-950' : 'hover:scale-110'
+            }`}
+            style={
+              {
+                width: size,
+                height: size,
+                backgroundColor: theme.swatch,
+                '--tw-ring-color': theme.swatch
+              } as React.CSSProperties
+            }
           >
-            {active && <Check size={compact ? 14 : 18} className="text-slate-950" strokeWidth={3} />}
+            {active && <Check size={size * 0.55} className="text-slate-950" strokeWidth={3} />}
           </button>
         );
-      })}
-      {!compact && (
-        <div className="col-span-5 grid grid-cols-5 gap-3 -mt-1">
-          {THEMES.map((theme) => (
-            <p key={theme.id} className="text-center text-[10px] text-slate-500 font-medium truncate">
+
+        if (compact) return button;
+
+        return (
+          <div key={theme.id} className="flex flex-col items-center gap-1.5">
+            {button}
+            <p className="text-center text-[10px] text-slate-500 font-medium leading-tight">
               {theme.label}
             </p>
-          ))}
-        </div>
-      )}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -18,18 +18,31 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+:root {
+  --bg-gradient: radial-gradient(ellipse at top, #1e1b3a 0%, #0f172a 45%, #020617 100%);
+  --glass-alpha: 0.05;
+  --glass-blur: 24px;
+  --glow-alpha: 0.35;
+}
+
 /* --- Color schemes ---
    Each preset overrides the same set of CSS variables that the @theme
-   block above declares. Tailwind v4 utilities (bg-brand-primary, etc.)
-   resolve through var(--color-brand-primary) at paint time, so switching
-   the [data-theme] attribute on <html> re-themes the whole app instantly
-   with zero JS re-render of styles. */
+   block above declares, plus background gradient / glass intensity / glow
+   strength — so themes aren't just recolors, they have a distinct feel.
+   Tailwind v4 utilities (bg-brand-primary, etc.) resolve through
+   var(--color-brand-primary) at paint time, so switching the [data-theme]
+   attribute on <html> re-themes the whole app instantly with zero JS
+   re-render of styles. */
 
 [data-theme="violet"] {
   --color-brand-primary: #8b5cf6;
   --color-brand-secondary: #10b981;
   --color-brand-accent: #f59e0b;
   --color-brand-danger: #ef4444;
+  --bg-gradient: radial-gradient(ellipse at top, #1e1b3a 0%, #0f172a 45%, #020617 100%);
+  --glass-alpha: 0.05;
+  --glass-blur: 24px;
+  --glow-alpha: 0.35;
 }
 
 [data-theme="cyan"] {
@@ -37,6 +50,10 @@
   --color-brand-secondary: #d946ef;
   --color-brand-accent: #fbbf24;
   --color-brand-danger: #fb7185;
+  --bg-gradient: radial-gradient(ellipse at top, #0e2a3a 0%, #0a1628 45%, #020617 100%);
+  --glass-alpha: 0.05;
+  --glass-blur: 24px;
+  --glow-alpha: 0.4;
 }
 
 [data-theme="lime"] {
@@ -44,6 +61,10 @@
   --color-brand-secondary: #8b5cf6;
   --color-brand-accent: #fbbf24;
   --color-brand-danger: #f87171;
+  --bg-gradient: radial-gradient(ellipse at top, #1a2e12 0%, #0d1a0a 45%, #020617 100%);
+  --glass-alpha: 0.05;
+  --glass-blur: 24px;
+  --glow-alpha: 0.4;
 }
 
 [data-theme="crimson"] {
@@ -51,6 +72,10 @@
   --color-brand-secondary: #94a3b8;
   --color-brand-accent: #fb923c;
   --color-brand-danger: #dc2626;
+  --bg-gradient: radial-gradient(ellipse at top, #2e1015 0%, #170a0d 45%, #020617 100%);
+  --glass-alpha: 0.05;
+  --glass-blur: 20px;
+  --glow-alpha: 0.4;
 }
 
 [data-theme="gold"] {
@@ -58,11 +83,79 @@
   --color-brand-secondary: #2dd4bf;
   --color-brand-accent: #a78bfa;
   --color-brand-danger: #ef4444;
+  --bg-gradient: radial-gradient(ellipse at top, #2e2410 0%, #17130a 45%, #020617 100%);
+  --glass-alpha: 0.05;
+  --glass-blur: 24px;
+  --glow-alpha: 0.35;
+}
+
+/* Glass — icy, translucent, brighter and airier than the gamer HUD themes.
+   Higher glass alpha + blur, softer glow, cool blue-white base. */
+[data-theme="glass"] {
+  --color-brand-primary: #7dd3fc;
+  --color-brand-secondary: #c4b5fd;
+  --color-brand-accent: #67e8f9;
+  --color-brand-danger: #fca5a5;
+  --bg-gradient: linear-gradient(160deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+  --glass-alpha: 0.10;
+  --glass-blur: 32px;
+  --glow-alpha: 0.2;
+}
+
+/* Elegant — muted, sophisticated, low-contrast glow. Deep plum/charcoal
+   with a restrained rose-gold accent. Reads as premium, not "gamer". */
+[data-theme="elegant"] {
+  --color-brand-primary: #d4a574;
+  --color-brand-secondary: #6b7280;
+  --color-brand-accent: #c084fc;
+  --color-brand-danger: #b45454;
+  --bg-gradient: linear-gradient(160deg, #241b1e 0%, #1a1417 50%, #100d0f 100%);
+  --glass-alpha: 0.04;
+  --glass-blur: 20px;
+  --glow-alpha: 0.15;
+}
+
+/* Sunset — warm, energetic gradient wash. */
+[data-theme="sunset"] {
+  --color-brand-primary: #fb923c;
+  --color-brand-secondary: #f472b6;
+  --color-brand-accent: #fbbf24;
+  --color-brand-danger: #ef4444;
+  --bg-gradient: linear-gradient(160deg, #3a1e2e 0%, #2e1a1a 50%, #1a1015 100%);
+  --glass-alpha: 0.06;
+  --glass-blur: 24px;
+  --glow-alpha: 0.4;
+}
+
+/* Ocean — calm, deep teal/blue. */
+[data-theme="ocean"] {
+  --color-brand-primary: #2dd4bf;
+  --color-brand-secondary: #38bdf8;
+  --color-brand-accent: #a3e635;
+  --color-brand-danger: #f87171;
+  --bg-gradient: linear-gradient(160deg, #0c2b2e 0%, #0a1f2e 50%, #020617 100%);
+  --glass-alpha: 0.06;
+  --glass-blur: 26px;
+  --glow-alpha: 0.3;
+}
+
+/* Royal — regal indigo + gold, richer glow. */
+[data-theme="royal"] {
+  --color-brand-primary: #818cf8;
+  --color-brand-secondary: #fbbf24;
+  --color-brand-accent: #f472b6;
+  --color-brand-danger: #ef4444;
+  --bg-gradient: radial-gradient(ellipse at top, #241b4d 0%, #150f2e 45%, #020617 100%);
+  --glass-alpha: 0.06;
+  --glass-blur: 24px;
+  --glow-alpha: 0.4;
 }
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-50 font-sans antialiased selection:bg-brand-primary/30;
+    @apply text-slate-50 font-sans antialiased selection:bg-brand-primary/30;
+    background: var(--bg-gradient);
+    min-height: 100vh;
   }
 
   h1, h2, h3, .font-display {
@@ -81,14 +174,17 @@
 /* --- Glass + HUD system --- */
 
 .glass-card {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl;
+  @apply border border-white/10 rounded-2xl shadow-xl;
+  background: rgba(255, 255, 255, var(--glass-alpha));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   box-shadow:
     inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
     0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
 .neon-glow {
-  box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-primary) calc(var(--glow-alpha) * 100%), transparent);
 }
 
 /* Signature element: a thin scanning glow along the top edge of key
@@ -137,7 +233,7 @@
 }
 
 .btn-glow:hover {
-  box-shadow: 0 0 24px color-mix(in srgb, var(--color-brand-primary) 35%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--color-brand-primary) calc(var(--glow-alpha) * 90%), transparent);
   transform: translateY(-1px);
 }
 

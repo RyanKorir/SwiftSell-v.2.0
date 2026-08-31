@@ -354,7 +354,7 @@ function AppShell() {
                        animate={{ opacity: 1, y: 0, scale: 1 }}
                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
                        transition={{ duration: 0.15 }}
-                       className="absolute right-0 top-full mt-2 z-40 glass-card p-4 w-56"
+                       className="absolute right-0 top-full mt-2 z-40 glass-card p-4 w-64"
                      >
                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
                          Color Scheme
