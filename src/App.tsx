@@ -131,7 +131,14 @@ function AppShell() {
             </div>
 
             <p className="text-[10px] text-slate-500 text-center leading-relaxed font-medium">
-              By continuing, you agree to SwiftSell's terms of service and security infrastructure protocols.
+              By continuing, you agree to SwiftSell's{' '}
+              <a href="/terms-of-service.html" target="_blank" rel="noreferrer" className="text-slate-400 underline hover:text-slate-200">
+                Terms of Service
+              </a>{' '}
+              and{' '}
+              <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="text-slate-400 underline hover:text-slate-200">
+                Privacy Policy
+              </a>.
             </p>
           </div>
         </motion.div>

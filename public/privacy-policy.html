@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — SwiftSell</title>
+  <meta name="description" content="Privacy Policy for the SwiftSell business management app." />
+  <style>
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+      line-height: 1.65;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+    }
+    h1 { font-size: 2rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.25rem; margin-top: 2.5rem; color: #a78bfa; }
+    p, li { color: #cbd5e1; }
+    a { color: #22d3ee; }
+    .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 2.5rem; }
+    ul { padding-left: 1.25rem; }
+    code { background: #1e293b; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p class="meta">SwiftSell — Last updated August 26, 2026</p>
+
+  <p>
+    SwiftSell ("the app") is a business management tool for tracking inventory, orders,
+    customers, and expenses. This policy explains what information the app collects, how it
+    is used, and what access is requested from your Google Account.
+  </p>
+
+  <h2>Information We Collect</h2>
+  <p>When you sign in with Google, SwiftSell receives your basic profile information:</p>
+  <ul>
+    <li>Your name and email address</li>
+    <li>Your Google account profile picture (if available)</li>
+  </ul>
+  <p>
+    This information is used solely to identify your account within SwiftSell and is stored
+    by our database provider, Supabase, associated with your unique account ID.
+  </p>
+
+  <p>Separately, you may choose to manually enter business data into the app, including:</p>
+  <ul>
+    <li>Product, inventory, and pricing details</li>
+    <li>Customer names and contact details you provide</li>
+    <li>Order and transaction records</li>
+    <li>Expense records</li>
+  </ul>
+  <p>This data is entered by you and is never accessed, read, or shared by us beyond storing it for your own use of the app.</p>
+
+  <h2>Google Sheets Access (Optional Feature)</h2>
+  <p>
+    SwiftSell includes an optional "Export to Sheets" feature. If you use it, the app requests
+    the <code>https://www.googleapis.com/auth/spreadsheets</code> permission from Google. This
+    permission is used <strong>only</strong> at the moment you click "Export to Sheets" on the
+    Finances page, and only to:
+  </p>
+  <ul>
+    <li>Create a new, single spreadsheet in your Google Drive</li>
+    <li>Write your expense records (date, category, description, amount) into that new spreadsheet</li>
+  </ul>
+  <p>
+    SwiftSell does not read, list, modify, or delete any other spreadsheet or file in your
+    Google Drive. This permission is never used in the background — only when you explicitly
+    trigger an export.
+  </p>
+
+  <h2>How Your Data Is Stored</h2>
+  <p>
+    Your account and business data are stored in a Supabase-hosted PostgreSQL database with
+    Row Level Security enabled, meaning your data is only readable and writable by your own
+    authenticated account — not by other users of the app, and not by us in the normal course
+    of operating the service.
+  </p>
+
+  <h2>Data Sharing</h2>
+  <p>
+    We do not sell, rent, or share your personal information or business data with third
+    parties for marketing or advertising purposes. Your data is used exclusively to provide
+    the app's functionality to you.
+  </p>
+
+  <h2>Data Retention and Deletion</h2>
+  <p>
+    Your data is retained for as long as your account exists. To request deletion of your
+    account and all associated data, contact the developer at the email address below.
+  </p>
+
+  <h2>Third-Party Services</h2>
+  <p>SwiftSell relies on the following third-party providers to operate:</p>
+  <ul>
+    <li><strong>Google</strong> — for account sign-in and, optionally, spreadsheet export</li>
+    <li><strong>Supabase</strong> — for authentication and database hosting</li>
+    <li><strong>Vercel</strong> — for application hosting</li>
+  </ul>
+
+  <h2>Contact</h2>
+  <p>
+    Questions about this policy or your data can be sent to
+    <a href="mailto:ryankorir00@gmail.com">ryankorir00@gmail.com</a>.
+  </p>
+
+  <p style="margin-top: 3rem;"><a href="/">&larr; Back to SwiftSell</a></p>
+</body>
+</html>

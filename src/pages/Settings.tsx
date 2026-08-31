@@ -173,6 +173,16 @@ export default function Settings() {
         <Lock size={20} />
         <span>Terminate Identity Session</span>
       </button>
+
+      <div className="flex justify-center gap-4 text-xs text-slate-500 pt-2">
+        <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="hover:text-slate-300 underline-offset-4 hover:underline">
+          Privacy Policy
+        </a>
+        <span>·</span>
+        <a href="/terms-of-service.html" target="_blank" rel="noreferrer" className="hover:text-slate-300 underline-offset-4 hover:underline">
+          Terms of Service
+        </a>
+      </div>
     </div>
   );
 }
