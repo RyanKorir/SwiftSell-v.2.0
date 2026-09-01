@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import type { ChangeEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
+import { exportToCSV, parseCSVFile } from '../lib/csv.ts';
 import { 
   Plus, 
   Search, 
@@ -8,7 +10,10 @@ import {
   Package, 
   Tag, 
   DollarSign, 
-  AlertCircle
+  AlertCircle,
+  Download,
+  Upload,
+  RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -16,6 +21,9 @@ export default function Inventory() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [search, setSearch] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: products, isLoading } = useQuery({ 
@@ -52,6 +60,67 @@ export default function Inventory() {
     setIsFormOpen(true);
   };
 
+  const handleExport = () => {
+    const rows = ((products as any[]) || []).map((p) => ({
+      name: p.name,
+      sku: p.sku ?? '',
+      cost: p.cost,
+      price: p.price,
+      stock: p.stock,
+      lowStockThreshold: p.lowStockThreshold
+    }));
+    exportToCSV(`swiftsell-inventory-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+  };
+
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setIsImporting(true);
+    setImportSummary(null);
+
+    try {
+      const { rows, errors } = await parseCSVFile(file);
+      let created = 0;
+      let skipped = 0;
+
+      for (const row of rows) {
+        const name = row.name?.trim();
+        const cost = parseFloat(row.cost);
+        const price = parseFloat(row.price);
+        const stock = parseInt(row.stock, 10);
+
+        if (!name || isNaN(cost) || isNaN(price) || isNaN(stock)) {
+          skipped++;
+          continue;
+        }
+
+        await firestoreApi.addProduct({
+          name,
+          sku: row.sku?.trim() || null,
+          cost,
+          price,
+          stock,
+          lowStockThreshold: row.lowstockthreshold ? parseInt(row.lowstockthreshold, 10) : 5,
+          isActive: true
+        });
+        created++;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setImportSummary(
+        `Imported ${created} product${created !== 1 ? 's' : ''}` +
+        (skipped > 0 ? `, skipped ${skipped} row${skipped !== 1 ? 's' : ''} (missing/invalid name, cost, price, or stock)` : '') +
+        (errors.length > 0 ? `. ${errors.length} parse warning(s).` : '.')
+      );
+    } catch (err) {
+      setImportSummary(err instanceof Error ? `Import failed: ${err.message}` : 'Import failed.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const filteredProducts = (products as any[])?.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()))
@@ -61,20 +130,56 @@ export default function Inventory() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Inventory</h1>
+          <h1 className="font-display text-3xl font-bold">Inventory</h1>
           <p className="text-slate-400">Track stock levels and pricing.</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingProduct(null);
-            setIsFormOpen(true);
-          }}
-          className="bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-primary/20 transition-all active:scale-95"
-        >
-          <Plus size={20} />
-          <span>Add Product</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            className="btn-glow bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 active:scale-95 disabled:opacity-50"
+            title="Import products from CSV (columns: name, sku, cost, price, stock, lowStockThreshold)"
+          >
+            {isImporting ? <RefreshCcw className="animate-spin" size={18} /> : <Upload size={18} />}
+            <span>Import CSV</span>
+          </button>
+          <button
+            onClick={handleExport}
+            className="btn-glow bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 active:scale-95"
+          >
+            <Download size={18} />
+            <span>Export CSV</span>
+          </button>
+          <button 
+            onClick={() => {
+              setEditingProduct(null);
+              setIsFormOpen(true);
+            }}
+            className="btn-glow bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-primary/20 active:scale-95"
+          >
+            <Plus size={20} />
+            <span>Add Product</span>
+          </button>
+        </div>
       </div>
+
+      {importSummary && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4 flex items-start gap-3 text-sm"
+        >
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-brand-accent" />
+          <span className="text-slate-300">{importSummary}</span>
+        </motion.div>
+      )}
 
       <div className="flex items-center space-x-4">
         <div className="flex-1 relative">

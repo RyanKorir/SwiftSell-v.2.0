@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
+import { exportToCSV } from '../lib/csv.ts';
 import { 
   Plus, 
   Search, 
@@ -10,7 +11,9 @@ import {
   MessageSquare,
   History,
   Edit2,
-  Trash2
+  Trash2,
+  X,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -18,6 +21,7 @@ import { format } from 'date-fns';
 export default function Customers() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
+  const [historyCustomer, setHistoryCustomer] = useState<any>(null);
   const [search, setSearch] = useState('');
   const queryClient = useQueryClient();
 
@@ -25,6 +29,17 @@ export default function Customers() {
     queryKey: ['customers'], 
     queryFn: () => firestoreApi.getCustomers() 
   });
+
+  const { data: allOrders } = useQuery({
+    queryKey: ['orders'],
+    queryFn: () => firestoreApi.getOrders()
+  });
+
+  const customerOrders = historyCustomer
+    ? ((allOrders as any[]) || [])
+        .filter((o) => o.customerId === historyCustomer.id)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : [];
 
   const createCustomerMutation = useMutation({
     mutationFn: (newCustomer: any) => firestoreApi.addCustomer({ ...newCustomer, totalSpent: 0 }),
@@ -61,23 +76,43 @@ export default function Customers() {
     (c.phone && c.phone.includes(search))
   );
 
+  const handleExport = () => {
+    const rows = ((customers as any[]) || []).map((c) => ({
+      name: c.name,
+      phone: c.phone ?? '',
+      email: c.email ?? '',
+      totalSpent: c.totalSpent,
+      notes: c.notes ?? ''
+    }));
+    exportToCSV(`swiftsell-customers-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Customers</h1>
+          <h1 className="font-display text-3xl font-bold">Customers</h1>
           <p className="text-slate-400">Manage relationships and history.</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingCustomer(null);
-            setIsFormOpen(true);
-          }}
-          className="bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-primary/20 transition-all active:scale-95"
-        >
-          <Plus size={20} />
-          <span>Add Customer</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="btn-glow bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 active:scale-95"
+          >
+            <Download size={18} />
+            <span>Export CSV</span>
+          </button>
+          <button 
+            onClick={() => {
+              setEditingCustomer(null);
+              setIsFormOpen(true);
+            }}
+            className="btn-glow bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-primary/20 active:scale-95"
+          >
+            <Plus size={20} />
+            <span>Add Customer</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center space-x-4">
@@ -170,7 +205,11 @@ export default function Customers() {
                         >
                            <Trash2 size={16} />
                         </button>
-                        <button className="p-2 text-slate-400 hover:text-white" title="History">
+                        <button
+                          onClick={() => setHistoryCustomer(c)}
+                          className="p-2 text-slate-400 hover:text-white"
+                          title="Order History"
+                        >
                            <History size={16} />
                         </button>
                      </div>
@@ -263,6 +302,61 @@ export default function Customers() {
                     </button>
                  </div>
                </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Order History */}
+      <AnimatePresence>
+        {historyCustomer && (
+          <>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setHistoryCustomer(null)}
+               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div 
+               initial={{ opacity: 0, y: 120 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: 120 }}
+               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+               className="fixed inset-x-0 bottom-0 sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-lg max-h-[88vh] sm:max-h-[80vh] overflow-y-auto p-6 glass-card rounded-b-none rounded-t-2xl sm:rounded-2xl z-[101]"
+            >
+               <div className="sm:hidden mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/20" />
+               <div className="flex items-center justify-between mb-1">
+                 <h2 className="font-display text-2xl font-bold">{historyCustomer.name}</h2>
+                 <button onClick={() => setHistoryCustomer(null)} className="p-1 text-slate-400 hover:text-white">
+                   <X size={20} />
+                 </button>
+               </div>
+               <p className="text-slate-400 text-sm mb-6">
+                 {customerOrders.length} order{customerOrders.length !== 1 ? 's' : ''} · Ksh {historyCustomer.totalSpent?.toLocaleString()} total spent
+               </p>
+
+               <div className="space-y-3">
+                 {customerOrders.map((order: any) => (
+                   <div key={order.id} className="glass-card p-4 flex items-center justify-between">
+                     <div>
+                       <p className="font-mono text-xs text-slate-500">
+                         {format(new Date(order.createdAt), 'MMM dd, yyyy')}
+                       </p>
+                       <p className={`text-xs mt-1 font-semibold capitalize ${
+                         order.status === 'cancelled' ? 'text-brand-danger' :
+                         order.status === 'delivered' ? 'text-brand-secondary' : 'text-brand-accent'
+                       }`}>
+                         {order.status}
+                       </p>
+                     </div>
+                     <p className="font-display font-bold text-lg">Ksh {order.totalAmount?.toLocaleString()}</p>
+                   </div>
+                 ))}
+                 {customerOrders.length === 0 && (
+                   <p className="text-center text-slate-500 py-8 text-sm">No orders yet from this customer.</p>
+                 )}
+               </div>
             </motion.div>
           </>
         )}

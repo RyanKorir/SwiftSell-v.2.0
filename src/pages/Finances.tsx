@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { googleSheetsService, SheetsAuthExpiredError } from '../services/googleSheetsService.ts';
+import { exportToCSV } from '../lib/csv.ts';
 import { 
   Plus, 
   TrendingUp, 
@@ -14,6 +15,7 @@ import {
   Trash2,
   Table,
   FileSpreadsheet,
+  Download,
   ExternalLink,
   RefreshCcw,
   AlertCircle
@@ -87,6 +89,16 @@ export default function Finances() {
     }
   };
 
+  const handleExportCSV = () => {
+    const rows = ((expenses as any[]) || []).map((e) => ({
+      date: e.date ? format(new Date(e.date), 'yyyy-MM-dd') : '',
+      category: e.category,
+      description: e.description ?? '',
+      amount: e.amount
+    }));
+    exportToCSV(`swiftsell-expenses-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+  };
+
   const createExpenseMutation = useMutation({
     mutationFn: (newExpense: any) => firestoreApi.addExpense(newExpense),
     onSuccess: () => {
@@ -135,7 +147,14 @@ export default function Finances() {
           <h1 className="font-display text-3xl font-bold">Finances</h1>
           <p className="text-slate-400">Analysis of your business health.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExportCSV}
+            className="btn-glow bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 active:scale-95"
+          >
+            <Download size={18} />
+            <span>Export CSV</span>
+          </button>
           <button
             onClick={handleExport}
             disabled={isExporting}

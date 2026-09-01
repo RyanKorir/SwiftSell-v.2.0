@@ -226,40 +226,41 @@ export const dataApi = {
     }
   },
 
+  // Atomic, server-side: validates stock (rejects overselling instead of
+  // silently clamping to 0), deducts stock, logs the stock_movements
+  // ledger entry, and keeps the customer's total_spent in sync — all in
+  // one database transaction. See DATA_MODEL.md for why this replaced the
+  // old client-side read-then-write approach.
   addOrder: async (orderData: any, items: any[]) => {
     try {
-      const userId = await currentUserId();
-      const { data: orderRow, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          owner_id: userId,
-          customer_id: orderData.customerId ?? null,
-          notes: orderData.notes ?? null,
-          total_amount: orderData.totalAmount,
-          profit: orderData.profit,
-          status: orderData.status ?? 'pending'
-        })
-        .select()
-        .single();
-      if (orderError) throw orderError;
-
-      if (items.length > 0) {
-        const { error: itemsError } = await supabase.from('order_items').insert(
-          items.map((item) => ({
-            owner_id: userId,
-            order_id: orderRow.id,
-            product_id: item.productId,
-            quantity: item.quantity,
-            price_at_purchase: item.priceAtPurchase,
-            cost_at_purchase: item.costAtPurchase
-          }))
-        );
-        if (itemsError) throw itemsError;
-      }
-
-      return mapOrder(orderRow);
+      const { data, error } = await supabase.rpc('create_order_with_items', {
+        p_customer_id: orderData.customerId ?? null,
+        p_notes: orderData.notes ?? null,
+        p_items: items.map((item) => ({
+          product_id: item.productId,
+          quantity: item.quantity
+        }))
+      });
+      if (error) throw error;
+      return mapOrder(data);
     } catch (error) {
       handleError(error, 'addOrder');
+    }
+  },
+
+  // Atomic, server-side: restores stock from the order's own item ledger
+  // (never from a possibly-stale "current stock" read), reverses the
+  // customer's total_spent, and blocks double-cancellation or cancelling
+  // a delivered order.
+  cancelOrder: async (orderId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('cancel_order', {
+        p_order_id: orderId
+      });
+      if (error) throw error;
+      return mapOrder(data);
+    } catch (error) {
+      handleError(error, 'cancelOrder');
     }
   },
 

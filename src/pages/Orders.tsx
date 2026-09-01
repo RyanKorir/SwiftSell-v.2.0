@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
+import { exportToCSV } from '../lib/csv.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { 
   Plus, 
@@ -12,7 +13,10 @@ import {
   XCircle,
   Package,
   ArrowRight,
-  Edit2
+  Edit2,
+  AlertCircle,
+  X,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -39,51 +43,33 @@ export default function Orders({ fabTrigger }: { fabTrigger?: number } = {}) {
     queryFn: () => firestoreApi.getCustomers() 
   });
 
+  const [orderError, setOrderError] = useState<string | null>(null);
+
   const createOrderMutation = useMutation({
     mutationFn: async ({ customerId, items, notes }: any) => {
-      let totalAmount = 0;
-      let totalProfit = 0;
-      const orderItems = [];
+      // Stock validation, deduction, total/profit computation, and the
+      // customer total_spent update all happen atomically server-side —
+      // see the create_order_with_items function. The client no longer
+      // computes or trusts its own totals.
+      const order = await firestoreApi.addOrder(
+        { customerId, notes },
+        items.map((item: any) => ({ productId: item.productId, quantity: item.quantity }))
+      );
 
-      for (const item of items) {
-        const product = (products as any[]).find(p => p.id === item.productId);
-        if (!product) continue;
-
-        const itemTotal = product.price * item.quantity;
-        const itemProfit = (product.price - product.cost) * item.quantity;
-        
-        totalAmount += itemTotal;
-        totalProfit += itemProfit;
-
-        orderItems.push({
-          productId: product.id,
-          quantity: item.quantity,
-          priceAtPurchase: product.price,
-          costAtPurchase: product.cost
-        });
-
-        // Deduct stock
-        await firestoreApi.updateProduct(product.id, { stock: Math.max(0, product.stock - item.quantity) });
-      }
-
-      const order = await firestoreApi.addOrder({
-        customerId,
-        notes,
-        totalAmount,
-        profit: totalProfit,
-        status: 'pending'
-      }, orderItems);
-
-      // Add XP
       const currentXP = (userStats?.xp || 0) + 10;
       const currentLevel = Math.floor(currentXP / 100) + 1;
       await firestoreApi.updateXP(currentXP, currentLevel);
 
       return order;
     },
+    onError: (err: any) => {
+      setOrderError(err?.message || 'Could not create order.');
+    },
     onSuccess: () => {
+      setOrderError(null);
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setIsFormOpen(false);
     }
@@ -99,22 +85,15 @@ export default function Orders({ fabTrigger }: { fabTrigger?: number } = {}) {
   });
 
   const cancelOrderMutation = useMutation({
-    mutationFn: async (order: any) => {
-      // Get items to restock
-      const items = await firestoreApi.getOrderItems(order.id);
-      if (items) {
-        for (const item of items as any[]) {
-          const product = (products as any[]).find(p => p.id === item.productId);
-          if (product) {
-            await firestoreApi.updateProduct(product.id, { stock: product.stock + item.quantity });
-          }
-        }
-      }
-      await firestoreApi.updateOrderStatus(order.id, 'cancelled');
+    mutationFn: (order: any) => firestoreApi.cancelOrder(order.id),
+    onError: (err: any) => {
+      setOrderError(err?.message || 'Could not cancel order.');
     },
     onSuccess: () => {
+      setOrderError(null);
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     }
   });
 
@@ -158,6 +137,18 @@ export default function Orders({ fabTrigger }: { fabTrigger?: number } = {}) {
     (o.notes && o.notes.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const handleExport = () => {
+    const rows = ((orders as any[]) || []).map((o) => ({
+      date: format(new Date(o.createdAt), 'yyyy-MM-dd'),
+      customer: (customers as any[])?.find((c) => c.id === o.customerId)?.name || 'Walk-in Customer',
+      status: o.status,
+      totalAmount: o.totalAmount,
+      profit: o.profit,
+      notes: o.notes ?? ''
+    }));
+    exportToCSV(`swiftsell-orders-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock size={16} className="text-brand-accent" />;
@@ -180,17 +171,40 @@ export default function Orders({ fabTrigger }: { fabTrigger?: number } = {}) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Orders</h1>
+          <h1 className="font-display text-3xl font-bold">Orders</h1>
           <p className="text-slate-400">Manage sales and fulfillment.</p>
         </div>
-        <button 
-          onClick={() => setIsFormOpen(true)}
-          className="bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-primary/20 transition-all active:scale-95"
-        >
-          <Plus size={20} />
-          <span>New Order</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="btn-glow bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 active:scale-95"
+          >
+            <Download size={18} />
+            <span>Export CSV</span>
+          </button>
+          <button 
+            onClick={() => setIsFormOpen(true)}
+            className="btn-glow bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 shadow-lg shadow-brand-primary/20 active:scale-95"
+          >
+            <Plus size={20} />
+            <span>New Order</span>
+          </button>
+        </div>
       </div>
+
+      {orderError && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4 flex items-start gap-3 text-sm text-brand-danger border-brand-danger/20"
+        >
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <span>{orderError}</span>
+          <button onClick={() => setOrderError(null)} className="ml-auto text-slate-400 hover:text-white">
+            <X size={16} />
+          </button>
+        </motion.div>
+      )}
 
       <div className="flex items-center space-x-4">
         <div className="flex-1 relative">
