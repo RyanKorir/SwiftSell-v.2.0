@@ -19,10 +19,11 @@ import {
   Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './context/AuthContext.tsx';
 import ThemeSwitcher from './components/ThemeSwitcher.tsx';
 import { dataApi as firestoreApi } from './lib/database.ts';
+import { useRealtimeSync } from './hooks/useRealtimeSync.ts';
 
 // Pages
 import Dashboard from './pages/Dashboard.tsx';
@@ -49,6 +50,21 @@ function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
   const [quickAddSignal, setQuickAddSignal] = useState(0);
+
+  // user.displayName / user.photoURL are Firebase fields and don't exist on
+  // Supabase's User type — that's why the name/avatar never showed before.
+  // Priority: the user's own chosen display_name > Google's profile name >
+  // email prefix > generic fallback.
+  const resolvedName =
+    userStats?.displayName ||
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email?.split('@')[0] ||
+    'Seller';
+  const resolvedAvatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+
+  const queryClient = useQueryClient();
+  const liveStatus = useRealtimeSync(queryClient, user?.id);
 
   const { data: navProducts } = useQuery({
     queryKey: ['products'],
@@ -182,11 +198,11 @@ function AppShell() {
           <div className="p-8">
             <div className="flex items-center space-x-4 mb-8 p-3 rounded-2xl bg-white/5 border border-white/5">
               <div className="w-12 h-12 rounded-xl bg-brand-secondary/20 flex items-center justify-center text-brand-secondary font-bold text-xl border border-brand-secondary/30 overflow-hidden">
-                {user.photoURL ? <img src={user.photoURL} alt="" /> : user.displayName?.charAt(0) || 'G'}
+                {resolvedAvatarUrl ? <img src={resolvedAvatarUrl} alt="" className="w-full h-full object-cover" /> : resolvedName.charAt(0).toUpperCase()}
               </div>
               <div className="text-left">
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Authenticated As</p>
-                <p className="text-white font-semibold">{user.displayName || 'Ganja Slinger'}</p>
+                <p className="text-white font-semibold">{resolvedName}</p>
               </div>
               <div className="ml-auto">
                 <div className="w-2 h-2 rounded-full bg-brand-secondary animate-pulse" />
@@ -350,10 +366,33 @@ function AppShell() {
              <span className="ml-2 font-display font-bold text-lg">SwiftSell</span>
           </div>
           <div className="hidden lg:block text-slate-400 font-medium">
-            Welcome back, <span className="text-slate-100 italic">{user.displayName?.split(' ')[0] || 'Seller'}</span>
+            Welcome back, <span className="text-slate-100 italic">{resolvedName.split(' ')[0]}</span>
           </div>
           
           <div className="flex items-center space-x-4">
+             <div
+               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-semibold uppercase tracking-wide"
+               title={
+                 liveStatus === 'live'
+                   ? 'Connected — changes sync in real time across devices'
+                   : liveStatus === 'connecting'
+                   ? 'Connecting to live sync…'
+                   : 'Live sync unavailable — reload to retry'
+               }
+             >
+               <span
+                 className={`w-1.5 h-1.5 rounded-full ${
+                   liveStatus === 'live'
+                     ? 'bg-brand-secondary animate-pulse'
+                     : liveStatus === 'connecting'
+                     ? 'bg-brand-accent animate-pulse'
+                     : 'bg-slate-500'
+                 }`}
+               />
+               <span className={liveStatus === 'live' ? 'text-brand-secondary' : 'text-slate-500'}>
+                 {liveStatus === 'live' ? 'Live' : liveStatus === 'connecting' ? 'Connecting' : 'Offline'}
+               </span>
+             </div>
              <div className="relative">
                <button
                  type="button"
@@ -402,7 +441,7 @@ function AppShell() {
                <Bell size={20} />
              </button>
              <div className="w-8 h-8 rounded-full bg-brand-secondary/20 flex items-center justify-center text-brand-secondary border border-brand-secondary/30 overflow-hidden">
-                {user.photoURL ? <img src={user.photoURL} alt="" /> : user.displayName?.charAt(0) || 'G'}
+                {resolvedAvatarUrl ? <img src={resolvedAvatarUrl} alt="" className="w-full h-full object-cover" /> : resolvedName.charAt(0).toUpperCase()}
              </div>
           </div>
         </header>

@@ -10,6 +10,7 @@ interface UserStats {
   currentStreak: number;
   lastActiveDate: string;
   badges: any[];
+  displayName: string | null;
 }
 
 interface AuthContextType {
@@ -33,7 +34,8 @@ function mapUserRow(row: any): UserStats {
     level: row.level,
     currentStreak: row.current_streak,
     lastActiveDate: row.last_active_date,
-    badges: row.badges ?? []
+    badges: row.badges ?? [],
+    displayName: row.display_name ?? null
   };
 }
 

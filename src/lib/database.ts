@@ -374,6 +374,20 @@ export const dataApi = {
   },
 
   // --- Stats ---
+  updateDisplayName: async (displayName: string) => {
+    try {
+      const userId = await currentUserId();
+      const trimmed = displayName.trim();
+      const { error } = await supabase
+        .from('users')
+        .update({ display_name: trimmed.length > 0 ? trimmed : null })
+        .eq('id', userId);
+      if (error) throw error;
+    } catch (error) {
+      handleError(error, 'updateDisplayName');
+    }
+  },
+
   updatePin: async (pin: string) => {
     try {
       const userId = await currentUserId();

@@ -9,15 +9,35 @@ import {
   Save, 
   RefreshCcw,
   AlertCircle,
-  Cloud,
+  UserCircle,
   Palette
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Settings() {
   const queryClient = useQueryClient();
-  const { user, logOut, refreshStats } = useAuth();
-  
+  const { user, userStats, logOut, refreshStats } = useAuth();
+
+  const resolvedName =
+    userStats?.displayName ||
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email?.split('@')[0] ||
+    'Seller';
+
+  const [displayName, setDisplayName] = useState('');
+  const [nameSuccess, setNameSuccess] = useState(false);
+
+  const updateNameMutation = useMutation({
+    mutationFn: (name: string) => firestoreApi.updateDisplayName(name),
+    onSuccess: async () => {
+      await refreshStats();
+      setDisplayName('');
+      setNameSuccess(true);
+      setTimeout(() => setNameSuccess(false), 3000);
+    }
+  });
+
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
@@ -142,28 +162,42 @@ export default function Settings() {
       <div className="glass-card p-6">
         <div className="flex items-center space-x-3 mb-4">
           <div className="p-2 rounded-lg bg-brand-accent/10 text-brand-accent">
-            <Cloud size={20} />
+            <UserCircle size={20} />
           </div>
-          <h2 className="text-xl font-bold">Cloud Infrastructure</h2>
+          <h2 className="text-xl font-bold">Profile</h2>
         </div>
-        <div className="space-y-3 text-sm text-slate-400">
-          <div className="flex justify-between py-2 border-b border-white/5">
-            <span>Identity</span>
-            <span className="text-white font-medium">{user?.email}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-white/5">
-            <span>Database</span>
-            <span className="text-white font-medium">Supabase (Postgres + Row Level Security)</span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-white/5">
-            <span>Region</span>
-            <span className="text-white font-medium">eu-west-2</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span>Currency</span>
-            <span className="text-brand-secondary font-bold">Kenyan Shilling (Ksh)</span>
-          </div>
-        </div>
+        <p className="text-sm text-slate-400 mb-5">
+          Choose how your name appears around the app — separate from your Google account name.
+        </p>
+        <form
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            if (displayName.trim().length === 0) return;
+            updateNameMutation.mutate(displayName.trim());
+          }}
+          className="flex flex-col sm:flex-row gap-3"
+        >
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder={resolvedName}
+            maxLength={60}
+            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-slate-500"
+          />
+          <button
+            type="submit"
+            disabled={updateNameMutation.isPending || displayName.trim().length === 0}
+            className="btn-glow bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center space-x-2 active:scale-95 disabled:opacity-50"
+          >
+            {updateNameMutation.isPending ? <RefreshCcw className="animate-spin" size={18} /> : <Save size={18} />}
+            <span>Save</span>
+          </button>
+        </form>
+        <p className="text-xs text-slate-500 mt-3">
+          Signed in as <span className="text-slate-300">{user?.email}</span>
+        </p>
+        {nameSuccess && <p className="text-xs text-brand-secondary mt-2">Display name updated!</p>}
       </div>
 
       <button 

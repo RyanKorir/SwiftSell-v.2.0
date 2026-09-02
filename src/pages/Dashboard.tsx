@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { dataApi as firestoreApi } from '../lib/database.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useCountUp } from '../hooks/useCountUp.ts';
 import { 
   TrendingUp, 
   ShoppingCart, 
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format, subDays, isSameDay } from 'date-fns';
 
 interface DashboardProps {
   setActiveTab: (tab: any) => void;
@@ -43,18 +45,33 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   const revenue = deliveredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const profit = deliveredOrders.reduce((sum, o) => sum + (o.profit || 0), 0);
 
+  // Real last-7-days revenue, grouped by day — replaces the previous
+  // hardcoded placeholder chart data.
+  const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), 6 - i));
+  const chartData = last7Days.map((day) => ({
+    day: format(day, 'EEE'),
+    sales: deliveredOrders
+      .filter((o) => o.createdAt && isSameDay(new Date(o.createdAt), day))
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+  }));
+
+  const animatedRevenue = useCountUp(revenue);
+  const animatedProfit = useCountUp(profit);
+  const animatedActiveOrders = useCountUp(pendingOrders.length);
+  const animatedStreak = useCountUp(userStats?.currentStreak || 0);
+
   const statsCards = [
-    { label: 'Revenue', value: `Ksh ${revenue.toLocaleString()}`, icon: TrendingUp, color: 'text-brand-secondary', bg: 'bg-brand-secondary/10' },
-    { label: 'Profit', value: `Ksh ${profit.toLocaleString()}`, icon: Award, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
-    { label: 'Active Orders', value: pendingOrders.length, icon: ShoppingCart, color: 'text-brand-accent', bg: 'bg-brand-accent/10' },
-    { label: 'Daily Streak', value: `${userStats?.currentStreak || 0} Days`, icon: Award, color: 'text-brand-accent', bg: 'bg-brand-accent/10' },
+    { label: 'Revenue', value: `Ksh ${animatedRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-brand-secondary', bg: 'bg-brand-secondary/10' },
+    { label: 'Profit', value: `Ksh ${animatedProfit.toLocaleString()}`, icon: Award, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
+    { label: 'Active Orders', value: animatedActiveOrders, icon: ShoppingCart, color: 'text-brand-accent', bg: 'bg-brand-accent/10' },
+    { label: 'Daily Streak', value: `${animatedStreak} Days`, icon: Award, color: 'text-brand-accent', bg: 'bg-brand-accent/10' },
   ];
 
   return (
     <div className="space-y-8 pb-10">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-slate-400 mt-1">Here's what's happening today.</p>
         </div>
         <button 
@@ -148,24 +165,18 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
 
         <div className="lg:col-span-2 glass-card p-6">
            <div className="flex items-center justify-between mb-8">
-              <h2 className="font-bold text-lg">Sales Activity</h2>
-              <select className="bg-white/5 text-xs rounded-lg border border-white/10 px-2 py-1 outline-none focus:ring-1 focus:ring-brand-primary">
-                 <option>Last 7 Days</option>
-                 <option>Last 30 Days</option>
-              </select>
+              <h2 className="font-bold text-lg flex items-center gap-2">
+                Sales Activity
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-secondary animate-pulse" title="Updates live as orders are delivered" />
+              </h2>
+              <span className="bg-white/5 text-xs rounded-lg border border-white/10 px-3 py-1 text-slate-400">
+                 Last 7 Days
+              </span>
            </div>
            
            <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[
-                  { day: 'Mon', sales: 400 },
-                  { day: 'Tue', sales: 300 },
-                  { day: 'Wed', sales: 600 },
-                  { day: 'Thu', sales: 800 },
-                  { day: 'Fri', sales: 500 },
-                  { day: 'Sat', sales: 900 },
-                  { day: 'Sun', sales: 750 },
-                ]}>
+                <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
