@@ -24,6 +24,7 @@ import { useAuth } from './context/AuthContext.tsx';
 import ThemeSwitcher from './components/ThemeSwitcher.tsx';
 import { dataApi as firestoreApi } from './lib/database.ts';
 import { useRealtimeSync } from './hooks/useRealtimeSync.ts';
+import { format } from 'date-fns';
 
 // Pages
 import Dashboard from './pages/Dashboard.tsx';
@@ -358,14 +359,64 @@ function AppShell() {
       </aside>
 
       <div className="flex-1 flex flex-col relative overflow-hidden">
-        <header className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-slate-950/50 backdrop-blur-md z-10 lg:pl-6">
-          <div className="flex items-center lg:hidden">
-             <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400">
-               <Menu size={24} />
-             </button>
-             <span className="ml-2 font-display font-bold text-lg">SwiftSell</span>
+        <header className="lg:hidden gradient-hero px-5 pt-5 pb-6 relative z-10">
+          <div className="flex items-center justify-between relative z-10">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 -ml-1.5 text-white/90">
+              <Menu size={22} />
+            </button>
+            <span className="font-display font-bold text-base text-white text-luminous">SwiftSell</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsThemePickerOpen((v) => !v)}
+                aria-label="Change color scheme"
+                className="p-1.5 text-white/80 hover:text-white"
+              >
+                <Palette size={19} />
+              </button>
+              <button
+                onClick={() => { setIsLocked(true); setPin(''); }}
+                aria-label="Lock session"
+                className="p-1.5 text-white/80 hover:text-white"
+              >
+                <LogOut size={19} />
+              </button>
+              <div className="w-9 h-9 ml-1 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-white text-sm font-semibold overflow-hidden backdrop-blur-sm">
+                {resolvedAvatarUrl ? <img src={resolvedAvatarUrl} alt="" className="w-full h-full object-cover" /> : resolvedName.charAt(0).toUpperCase()}
+              </div>
+            </div>
           </div>
-          <div className="hidden lg:block text-slate-400 font-medium">
+          <div className="mt-4 relative z-10">
+            <p className="text-white/70 text-xs font-mono uppercase tracking-widest">
+              {format(new Date(), 'EEEE, MMM d')}
+            </p>
+            <p className="mt-1 font-display text-2xl font-bold text-white text-luminous">
+              Welcome back, {resolvedName.split(' ')[0]}
+            </p>
+          </div>
+
+          <AnimatePresence>
+            {isThemePickerOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setIsThemePickerOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-5 top-16 z-40 glass-card p-4 w-64"
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
+                    Color Scheme
+                  </p>
+                  <ThemeSwitcher />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </header>
+
+        <header className="hidden lg:flex h-16 items-center justify-between px-6 border-b border-white/5 bg-slate-950/50 backdrop-blur-md z-10">
+          <div className="text-slate-400 font-medium">
             Welcome back, <span className="text-slate-100 italic">{resolvedName.split(' ')[0]}</span>
           </div>
           

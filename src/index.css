@@ -254,3 +254,59 @@
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
 }
+
+/* --- Gradient hero (mobile) ---
+   A living, flowing multi-stop gradient built from the ACTIVE theme's own
+   colors — never a static image — so it stays correct across all 10 color
+   schemes. Slowly drifts (200% background-size + shifting position) for
+   the "flowing background" feel classic iOS7-era gradient app UIs had,
+   rather than a flat static wash. */
+.gradient-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--color-brand-primary) 55%, #0f172a) 0%,
+    color-mix(in srgb, var(--color-brand-secondary) 45%, #0f172a) 45%,
+    color-mix(in srgb, var(--color-brand-accent) 40%, #0f172a) 100%
+  );
+  background-size: 220% 220%;
+  animation: hero-flow 14s ease-in-out infinite;
+}
+
+.gradient-hero::after {
+  /* soft luminous glow blob, matching the reference article's "radial
+     spotlight" gradient variant, layered on top of the flowing wash */
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 70%;
+  height: 140%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, white 35%, transparent) 0%,
+    transparent 65%
+  );
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+@keyframes hero-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-hero {
+    animation: none;
+    background-position: 30% 50%;
+  }
+}
+
+/* Light, luminous type for use directly on the gradient hero — a soft
+   glow instead of a hard drop-shadow, matching the "light almost
+   luminous text" look from the reference. */
+.text-luminous {
+  text-shadow: 0 1px 24px color-mix(in srgb, white 40%, transparent);
+}
